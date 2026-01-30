@@ -64,6 +64,7 @@
         .content {
             display: flex;
             gap: 20px;
+            flex-wrap: wrap;
         }
 
         .table-container {
@@ -151,11 +152,12 @@
         }
 
         .chart-container {
-            flex-grow: 1;
+            flex: 1 1 300px;
+            min-width: 300px;
         }
 
         #barChart {
-            max-width: 350px;
+            width: 100%;
         }
 
         /* Distribution charts section */
@@ -225,6 +227,19 @@
 
         .distribution-segment.empty {
             display: none;
+        }
+
+        @media (max-width: 500px) {
+            .distribution-chart {
+                flex-direction: column;
+                align-items: stretch;
+                margin-bottom: 16px;
+            }
+
+            .distribution-label {
+                width: 100%;
+                margin-bottom: 6px;
+            }
         }
 
         /* Sorting controls */
