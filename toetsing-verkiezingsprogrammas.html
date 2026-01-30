@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overzicht van tellingen per partij</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .bijlage {
+            font-size: 12px;
+            color: #666;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .title-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .arrow {
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 20px solid #c41e3a;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            display: flex;
+            gap: 20px;
+        }
+
+        .table-container {
+            flex-shrink: 0;
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 14px;
+        }
+
+        th {
+            padding: 8px 12px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        th.party-header {
+            color: #c41e3a;
+            text-align: left;
+            background: none;
+        }
+
+        th.rood {
+            background: #c41e3a;
+            color: white;
+            border-radius: 4px 0 0 0;
+        }
+
+        th.geel {
+            background: #f4c430;
+            color: #333;
+        }
+
+        th.groen {
+            background: #6b8e23;
+            color: white;
+            border-radius: 0 4px 0 0;
+        }
+
+        td {
+            padding: 6px 12px;
+            text-align: center;
+        }
+
+        td.party-name {
+            color: #c41e3a;
+            font-weight: 500;
+            text-align: left;
+            background: none;
+        }
+
+        td.rood-val {
+            background: #c41e3a;
+            color: white;
+        }
+
+        td.geel-val {
+            background: #f4c430;
+            color: #333;
+        }
+
+        td.groen-val {
+            background: #6b8e23;
+            color: white;
+        }
+
+        tr:last-child td.rood-val {
+            border-radius: 0 0 0 4px;
+        }
+
+        tr:last-child td.groen-val {
+            border-radius: 0 0 4px 0;
+        }
+
+        th.total-header {
+            color: #666;
+            background: none;
+        }
+
+        td.total-val {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            flex-grow: 1;
+        }
+
+        #barChart {
+            max-width: 350px;
+        }
+
+        /* Distribution charts section */
+        .distribution-section {
+            margin-top: 50px;
+        }
+
+        .distribution-section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .distribution-chart {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .distribution-label {
+            width: 110px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #c41e3a;
+            flex-shrink: 0;
+            line-height: 1.3;
+        }
+
+        .distribution-label .total {
+            font-size: 11px;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .distribution-bar {
+            flex-grow: 1;
+            display: flex;
+            height: 32px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .distribution-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 0;
+            transition: flex-basis 0.3s ease;
+        }
+
+        .distribution-segment.rood {
+            background: #c41e3a;
+            color: white;
+        }
+
+        .distribution-segment.geel {
+            background: #f4c430;
+            color: #333;
+        }
+
+        .distribution-segment.groen {
+            background: #6b8e23;
+            color: white;
+        }
+
+        .distribution-segment.empty {
+            display: none;
+        }
+
+        /* Sorting controls */
+        .sort-controls {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .sort-controls label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .sort-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .sort-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .sort-btn.active {
+            background: #c41e3a;
+            color: white;
+            border-color: #c41e3a;
+        }
+
+        .sort-btn.active.groen-active {
+            background: #6b8e23;
+            border-color: #6b8e23;
+        }
+
+        .sort-btn.active.geel-active {
+            background: #f4c430;
+            border-color: #f4c430;
+            color: #333;
+        }
+
+        /* Legend */
+        .legend {
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-weight: 600;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .legend-color.rood {
+            background: #c41e3a;
+            color: white;
+        }
+
+        .legend-color.geel {
+            background: #f4c430;
+            color: #333;
+        }
+
+        .legend-color.groen {
+            background: #6b8e23;
+            color: white;
+        }
+
+        .legend-text {
+            color: #333;
+        }
+
+        /* Source */
+        .source {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .source a {
+            color: #c41e3a;
+            text-decoration: none;
+        }
+
+        .source a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="bijlage">INTERACTIEF</div>
+        <div class="title-container">
+            <div class="arrow"></div>
+            <h1>OVERZICHT VAN TELLINGEN PER PARTIJ</h1>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <span class="legend-color groen">GROEN</span>
+            <span class="legend-text">Plannen die de rechtsstaat kunnen verbeteren of versterken.</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color geel">GEEL</span>
+            <span class="legend-text">Plannen die een risico vormen voor de rechtsstaat.</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color rood">ROOD</span>
+            <span class="legend-text">Plannen die in strijd zijn met beginselen van rechtsstatelijkheid.</span>
+        </div>
+    </div>
+
+    <div class="sort-controls">
+        <label>Sorteren op:</label>
+        <button class="sort-btn active" data-sort="alpha">A-Z</button>
+        <button class="sort-btn" data-sort="total">Totaal</button>
+        <button class="sort-btn" data-sort="rood"># rood</button>
+        <button class="sort-btn" data-sort="geel"># geel</button>
+        <button class="sort-btn" data-sort="groen"># groen</button>
+        <button class="sort-btn" data-sort="rood-pct">% rood</button>
+        <button class="sort-btn" data-sort="geel-pct">% geel</button>
+        <button class="sort-btn" data-sort="groen-pct">% groen</button>
+        <button class="sort-btn" data-sort="left-right">Links → Rechts</button>
+        <button class="sort-btn" data-sort="progressive">Progressief → Conservatief</button>
+    </div>
+
+    <div class="content">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="party-header">Partij</th>
+                        <th class="rood">ROOD</th>
+                        <th class="geel">GEEL</th>
+                        <th class="groen">GROEN</th>
+                        <th class="total-header">TOTAAL</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+
+    <div class="distribution-section">
+        <h2>Verdeling per partij</h2>
+        <div id="distributionCharts"></div>
+    </div>
+
+    <div class="source">
+        Bronnen:<br>
+        <a href="https://www.advocatenorde.nl/document/nova-toets-verkiezingsprogrammas-2025" target="_blank">NOvA Toets Verkiezingsprogramma's 2025 - Nederlandse Orde van Advocaten</a><br>
+        <a href="https://tweedekamer2025.kieskompas.nl/nl/results/compass" target="_blank">Kieskompas Tweede Kamer 2025</a>
+    </div>
+
+    <script>
+        const rawData = [
+            { party: 'BBB', rood: 12, geel: 16, groen: 3 },
+            { party: 'CDA', rood: 1, geel: 9, groen: 10 },
+            { party: 'CU', rood: 1, geel: 4, groen: 4 },
+            { party: 'Denk', rood: 0, geel: 3, groen: 4 },
+            { party: 'D66', rood: 1, geel: 1, groen: 17 },
+            { party: 'FvD', rood: 24, geel: 18, groen: 1 },
+            { party: 'GL/PvdA', rood: 0, geel: 4, groen: 21 },
+            { party: 'JA21', rood: 18, geel: 15, groen: 0 },
+            { party: 'NSC', rood: 2, geel: 6, groen: 18 },
+            { party: 'PvdD', rood: 0, geel: 2, groen: 21 },
+            { party: 'PVV', rood: 23, geel: 14, groen: 0 },
+            { party: 'SGP', rood: 13, geel: 15, groen: 3 },
+            { party: 'SP', rood: 1, geel: 2, groen: 12 },
+            { party: 'VVD', rood: 9, geel: 20, groen: 3 },
+            { party: 'Volt', rood: 0, geel: 2, groen: 18 }
+        ];
+
+        // Add totals to data
+        rawData.forEach(d => d.total = d.rood + d.geel + d.groen);
+
+        // Political compass order (from Kieskompas)
+        const leftToRight = ['PvdD', 'SP', 'GL/PvdA', 'Volt', 'Denk', 'D66', 'CU', 'NSC', 'CDA', 'SGP', 'PVV', 'BBB', 'VVD', 'JA21', 'FvD'];
+        const progressiveToConservative = ['Volt', 'PvdD', 'GL/PvdA', 'D66', 'SP', 'Denk', 'CU', 'NSC', 'CDA', 'VVD', 'SGP', 'JA21', 'BBB', 'PVV', 'FvD'];
+
+        let currentSort = 'alpha';
+        let barChart = null;
+
+        function sortData(data, sortType) {
+            const sorted = [...data];
+            switch (sortType) {
+                case 'alpha':
+                    sorted.sort((a, b) => a.party.localeCompare(b.party));
+                    break;
+                case 'total':
+                    sorted.sort((a, b) => b.total - a.total);
+                    break;
+                case 'rood':
+                    sorted.sort((a, b) => b.rood - a.rood || b.total - a.total);
+                    break;
+                case 'geel':
+                    sorted.sort((a, b) => b.geel - a.geel || b.total - a.total);
+                    break;
+                case 'groen':
+                    sorted.sort((a, b) => b.groen - a.groen || b.total - a.total);
+                    break;
+                case 'rood-pct':
+                    sorted.sort((a, b) => (b.rood / b.total) - (a.rood / a.total) || b.total - a.total);
+                    break;
+                case 'geel-pct':
+                    sorted.sort((a, b) => (b.geel / b.total) - (a.geel / a.total) || b.total - a.total);
+                    break;
+                case 'groen-pct':
+                    sorted.sort((a, b) => (b.groen / b.total) - (a.groen / a.total) || b.total - a.total);
+                    break;
+                case 'left-right':
+                    sorted.sort((a, b) => leftToRight.indexOf(a.party) - leftToRight.indexOf(b.party));
+                    break;
+                case 'progressive':
+                    sorted.sort((a, b) => progressiveToConservative.indexOf(a.party) - progressiveToConservative.indexOf(b.party));
+                    break;
+            }
+            return sorted;
+        }
+
+        function renderTable(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="party-name">${row.party}</td>
+                    <td class="rood-val">${row.rood}</td>
+                    <td class="geel-val">${row.geel}</td>
+                    <td class="groen-val">${row.groen}</td>
+                    <td class="total-val">${row.total}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function renderBarChart(data) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+
+            if (barChart) {
+                barChart.destroy();
+            }
+
+            barChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.party),
+                    datasets: [
+                        {
+                            label: 'Rood',
+                            data: data.map(d => d.rood),
+                            backgroundColor: '#c41e3a',
+                            borderWidth: 0
+                        },
+                        {
+                            label: 'Geel',
+                            data: data.map(d => d.geel),
+                            backgroundColor: '#f4c430',
+                            borderWidth: 0
+                        },
+                        {
+                            label: 'Groen',
+                            data: data.map(d => d.groen),
+                            backgroundColor: '#6b8e23',
+                            borderWidth: 0
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            max: 45,
+                            ticks: {
+                                stepSize: 5
+                            },
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            display: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDistributionCharts(data) {
+            const container = document.getElementById('distributionCharts');
+            container.innerHTML = '';
+
+            data.forEach(row => {
+                const roodPct = (row.rood / row.total) * 100;
+                const geelPct = (row.geel / row.total) * 100;
+                const groenPct = (row.groen / row.total) * 100;
+
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'distribution-chart';
+
+                chartDiv.innerHTML = `
+                    <div class="distribution-label">
+                        ${row.party}
+                        <div class="total">${row.total} voorstellen</div>
+                    </div>
+                    <div class="distribution-bar">
+                        <div class="distribution-segment rood ${row.rood === 0 ? 'empty' : ''}" style="flex-basis: ${roodPct}%">
+                            ${row.rood > 0 ? row.rood : ''}
+                        </div>
+                        <div class="distribution-segment geel ${row.geel === 0 ? 'empty' : ''}" style="flex-basis: ${geelPct}%">
+                            ${row.geel > 0 ? row.geel : ''}
+                        </div>
+                        <div class="distribution-segment groen ${row.groen === 0 ? 'empty' : ''}" style="flex-basis: ${groenPct}%">
+                            ${row.groen > 0 ? row.groen : ''}
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(chartDiv);
+            });
+        }
+
+        function renderAll(sortType) {
+            const sortedData = sortData(rawData, sortType);
+            renderTable(sortedData);
+            renderBarChart(sortedData);
+            renderDistributionCharts(sortedData);
+        }
+
+        // Sort button handlers
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sort-btn').forEach(b => {
+                    b.classList.remove('active', 'groen-active', 'geel-active');
+                });
+                btn.classList.add('active');
+
+                const sortType = btn.dataset.sort;
+                if (sortType === 'groen' || sortType === 'groen-pct') btn.classList.add('groen-active');
+                if (sortType === 'geel' || sortType === 'geel-pct') btn.classList.add('geel-active');
+
+                currentSort = sortType;
+                renderAll(sortType);
+            });
+        });
+
+        // Initial render
+        renderAll('alpha');
+    </script>
+</body>
+
+</html>
